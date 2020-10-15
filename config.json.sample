@@ -1,0 +1,12 @@
+{
+  "ip": "127.0.0.1",
+  "port": 3333,
+  "my_domain": "localhost:3333",
+  "SLUG_TO_PAGE": {
+    "": "89f2d3ee8c1249b38840f65d9b1ad392"
+  },
+  "PAGE_TITLE": "",
+  "PAGE_DESCRIPTION": "",
+  "GOOGLE_FONT": "Offside",
+  "CUSTOM_SCRIPT": ""
+}
