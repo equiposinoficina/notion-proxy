@@ -6,8 +6,10 @@ const jsdom = require("jsdom")
 const { JSDOM } = jsdom
 var cors = require('cors')
 const express = require('express')
+const bodyParser = require('body-parser');
 const app = express()
 app.use(cors())
+app.use(bodyParser.raw({ type: "application/json" }))
 const config = require('config')
 
 const host = config.get('host')
@@ -39,83 +41,7 @@ function generateSitemap() {
   sitemap += '</urlset>';
   return sitemap;
 }
-  
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, HEAD, POST, PUT, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
-};
-  
-function handleOptions(request) {
-  if (request.headers.get('Origin') !== null &&
-    request.headers.get('Access-Control-Request-Method') !== null &&
-    request.headers.get('Access-Control-Request-Headers') !== null) {
-    // Handle CORS pre-flight request.
-    return new Response(null, {
-      headers: corsHeaders
-    });
-  } else {
-    // Handle standard OPTIONS request.
-    return new Response(null, {
-      headers: {
-        'Allow': 'GET, HEAD, POST, PUT, OPTIONS',
-      }
-    });
-  }
-}
-  
-async function fetchAndApply(request) {
-  if (request.method === 'OPTIONS') {
-    return handleOptions(request);
-  }
-  let url = new URL(request.url);
-  url.hostname = 'www.notion.so';
-  if (url.pathname === '/robots.txt') {
-    return new Response('Sitemap: https://' + MY_DOMAIN + '/sitemap.xml');
-  }
-  if (url.pathname === '/sitemap.xml') {
-    let response = new Response(generateSitemap());
-    response.headers.set('content-type', 'application/xml');
-    return response;
-  }
-  let fullPathname = request.url.replace("https://" + MY_DOMAIN, "");
-  let response;
-  if (url.pathname.startsWith('/app') && url.pathname.endsWith('js')) {
-    response = await fetch(url.toString());
-    let body = await response.text();
-    response = new Response(body.replace(/www.notion.so/g, MY_DOMAIN).replace(/notion.so/g, MY_DOMAIN), response);
-    response.headers.set('Content-Type', 'application/x-javascript');
-    return response;
-  } else if ((url.pathname.startsWith('/api'))) {
-    // Forward API
-    response = await fetch(url.toString(), {
-      body: request.body,
-      headers: {
-        'content-type': 'application/json;charset=UTF-8',
-        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36'
-      },
-      method: 'POST',
-    });
-    response = new Response(response.body, response);
-    response.headers.set('Access-Control-Allow-Origin', '*');
-    return response;
-  } else if (slugs.indexOf(url.pathname.slice(1)) > -1) {
-    const pageId = SLUG_TO_PAGE[url.pathname.slice(1)];
-    return Response.redirect('https://' + MY_DOMAIN + '/' + pageId, 301);
-  } else {
-    response = await fetch(url.toString(), {
-      body: request.body,
-      headers: request.headers,
-      method: request.method,
-    });
-    response = new Response(response.body, response);
-    response.headers.delete('Content-Security-Policy');
-    response.headers.delete('X-Content-Security-Policy');
-  }
 
-  return appendJavascript(response, SLUG_TO_PAGE);
-}
-  
 function parseMeta(element) {
   try {
     if (PAGE_TITLE !== '') {
@@ -163,10 +89,10 @@ function parseHead (element) {
   </style>`
 }
 
-function parseBody (SLUG_TO_PAGE, element) {
-  element.innerHTML += `<div style="display:none">Powered by <a href="http://fruitionsite.com">Fruition</a></div>
+function parseBody (element) {
+  element.innerHTML += `
   <script>
-  const SLUG_TO_PAGE =  {"":"89f2d3ee8c1249b38840f65d9b1ad392"};
+  const SLUG_TO_PAGE =  ${JSON.stringify(SLUG_TO_PAGE)};
   const PAGE_TO_SLUG = {};
   const slugs = [];
   const pages = [];
@@ -275,7 +201,7 @@ function parse (document) {
   parseHead(head)
   
   let tagBody = document.querySelector('body')
-  parseBody(SLUG_TO_PAGE, tagBody)
+  parseBody(tagBody)
   
 }
 
@@ -283,23 +209,25 @@ var bwH;
 
 app.get('*', (req, res) => {
   let url = 'https://www.notion.so'
-  if (req.originalUrl === '/') url += '/89f2d3ee8c1249b38840f65d9b1ad392'
+  let uri = req.originalUrl.substring(1)
+  if (SLUG_TO_PAGE.hasOwnProperty(uri)) {
+    url += '/' + SLUG_TO_PAGE[uri]
+    return res.redirect(301, '/' + SLUG_TO_PAGE[uri])
+  }
   else url += req.originalUrl
   console.log('proxy_pass', url)  
   bwH = req.headers
   delete bwH['host']
   delete bwH['referer']
-  // console.log(bwH)
-  res.headers = bwH
+    res.headers = bwH
   let ct = mime.lookup(req.originalUrl)
   if (!ct) ct = 'text/html'
   res.set('Content-Type', ct)
   res.removeHeader('Content-Security-Policy')
   res.removeHeader('X-Content-Security-Policy')
-  // console.log('get', req.originalUrl)
-
+  
   return fetch(url, {
-    body: req.body, 
+    payload: req.body.toString(), 
     headers: bwH,
     rejectUnauthorized: false,
     redirect: 'follow',
@@ -307,16 +235,18 @@ app.get('*', (req, res) => {
     }, (error, meta, body) => {
     if (req.originalUrl.startsWith('/app') && req.originalUrl.endsWith('js')) {
       res.set('Content-Type', 'application/x-javascript')
-      body = body.toString().replace(/https:\/\/www.notion.so/g, 'http://' + MY_DOMAIN).replace(/https:\/\/notion.so/g, 'http://' + MY_DOMAIN)
+      body = body.toString().replace(/www.notion.so/g, MY_DOMAIN).replace(/notion.so/g, MY_DOMAIN)
       return res.send(body)
     } else if (req.originalUrl.endsWith('css') || req.originalUrl.endsWith('js')) {
       return res.send(body.toString())
     } else {
-      // console.log(meta)
-      const dom = new JSDOM(body.toString(), { includeNodeLocations: true })
-      console.log('parse')
-      parse(dom.window.document)
-      return res.send(dom.serialize())
+      if (meta.responseHeaders['content-type'].includes('text/')) {
+        const dom = new JSDOM(body.toString(), { includeNodeLocations: true })
+        parse(dom.window.document)
+        return res.send(dom.serialize())
+      } else {
+        return res.send(body)
+      }
     }
   })
 
@@ -324,14 +254,12 @@ app.get('*', (req, res) => {
 
 app.post('*', (req, res) => {
   const url = 'https://notion.so' + req.originalUrl
-  // console.log('post', req.originalUrl)
-
+  const oldBody = req.body.toString()
   if (req.originalUrl.startsWith('/api')) {
-    // console.log('proxy_pass', url)
     fetch(url, {
-      body: req.body,
+      payload: oldBody,
       headers: {
-        'content-type': 'application/json;charset=UTF-8',
+        'content-type': 'application/json',
         'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.163 Safari/537.36'
       },
       method: 'POST',
