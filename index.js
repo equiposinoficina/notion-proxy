@@ -12,7 +12,7 @@ app.use(cors())
 app.use(bodyParser.raw({ type: "application/json" }))
 const config = require('config')
 
-const host = config.get('host')
+//const host = config.get('host')
 const port = config.get('port')
 const MY_DOMAIN = config.get('my_domain')
 const SLUG_TO_PAGE = config.get('SLUG_TO_PAGE')
@@ -207,15 +207,40 @@ function parse (document) {
 
 var bwH;
 
+var cache = {}
+var crypto = require('crypto')
+
+
+function cache_hashkey (url) {
+  let shasum = crypto.createHash('sha1')
+  shasum.update(url)
+  return shasum.digest('hex')
+}
+
+function cache_save( meta, body) {
+  const key = cache_hashkey(meta.finalUrl)
+  cache[key] = body
+}
+
+function cache_load(url) {
+  const key = cache_hashkey(url)
+  if (key in cache) return cache[key]
+  return null
+}
+
+
 app.get('*', (req, res) => {
   let url = 'https://www.notion.so'
   let uri = req.originalUrl.substring(1)
   if (SLUG_TO_PAGE.hasOwnProperty(uri)) {
     url += '/' + SLUG_TO_PAGE[uri]
     return res.redirect(301, '/' + SLUG_TO_PAGE[uri])
-  }
+  }  
   else url += req.originalUrl
-  console.log('proxy_pass', url)  
+
+  console.log('proxy_pass', url)
+  const c = cache_load(url)
+  
   bwH = req.headers
   delete bwH['host']
   delete bwH['referer']
@@ -226,6 +251,10 @@ app.get('*', (req, res) => {
   res.removeHeader('Content-Security-Policy')
   res.removeHeader('X-Content-Security-Policy')
   
+  if (c) {
+    console.log('tornem cache')
+    return res.send(c)
+  }
   return fetch(url, {
     payload: req.body.toString(), 
     headers: bwH,
@@ -236,15 +265,21 @@ app.get('*', (req, res) => {
     if (req.originalUrl.startsWith('/app') && req.originalUrl.endsWith('js')) {
       res.set('Content-Type', 'application/x-javascript')
       body = body.toString().replace(/www.notion.so/g, MY_DOMAIN).replace(/notion.so/g, MY_DOMAIN)
+      cache_save(meta, body)
       return res.send(body)
     } else if (req.originalUrl.endsWith('css') || req.originalUrl.endsWith('js')) {
-      return res.send(body.toString())
+      const bs = body.toString()
+      cache_save(meta, bs)
+      return res.send(bs)
     } else {
       if (meta.responseHeaders['content-type'].includes('text/')) {
         const dom = new JSDOM(body.toString(), { includeNodeLocations: true })
         parse(dom.window.document)
-        return res.send(dom.serialize())
+        const ds = dom.serialize()
+        cache_save(meta, ds)
+        return res.send(ds)
       } else {
+        cache_save(meta, body)
         return res.send(body)
       }
     }
