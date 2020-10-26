@@ -12,7 +12,7 @@ app.use(cors())
 app.use(bodyParser.raw({ type: "application/json" }))
 const config = require('config')
 
-const host = config.get('host')
+//const host = config.get('host')
 const port = config.get('port')
 const MY_DOMAIN = config.get('my_domain')
 const SLUG_TO_PAGE = config.get('SLUG_TO_PAGE')
