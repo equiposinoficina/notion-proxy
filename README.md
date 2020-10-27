@@ -100,4 +100,5 @@ GNU General Public License v3.0
 https://equiposinoficina.com
 
 Dani Aguayo - http://danielaguayo.com
+
 Oriol Rius - https://oriolrius.me
