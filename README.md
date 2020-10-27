@@ -94,7 +94,7 @@ server {
 `
 
 # License
-GNU General Public License v3.0
+[GNU General Public License v3.0](https://github.com/equiposinoficina/notion-proxy/blob/main/LICENSE)
 
 # Authors
 https://equiposinoficina.com
