@@ -1,3 +1,4 @@
+var crypto = require('crypto')
 var sslRootCAs = require('ssl-root-cas/latest')
 sslRootCAs.inject()
 const fetch = require('fetch').fetchUrl
@@ -6,11 +7,12 @@ const jsdom = require("jsdom")
 const { JSDOM } = jsdom
 var cors = require('cors')
 const express = require('express')
-const bodyParser = require('body-parser');
+const bodyParser = require('body-parser')
 const app = express()
 app.use(cors())
 app.use(bodyParser.raw({ type: "application/json" }))
 const config = require('config')
+
 
 //const host = config.get('host')
 const port = config.get('port')
@@ -21,15 +23,26 @@ const PAGE_DESCRIPTION = config.get('PAGE_DESCRIPTION')
 const GOOGLE_FONT = config.get('GOOGLE_FONT')
 const CUSTOM_SCRIPT = config.get('CUSTOM_SCRIPT')
 
-const PAGE_TO_SLUG = {};
-const slugs = [];
-const pages = [];
+var bwH;
+var cache = {}
+const PAGE_TO_SLUG = {}
+const slugs = []
+const pages = []
 Object.keys(SLUG_TO_PAGE).forEach(slug => {
-  const page = SLUG_TO_PAGE[slug];
-  slugs.push(slug);
-  pages.push(page);
-  PAGE_TO_SLUG[page] = slug;
-});
+  const page = SLUG_TO_PAGE[slug]
+  slugs.push(slug)
+  pages.push(page)
+  PAGE_TO_SLUG[page] = slug
+})
+
+var cron = require('node-cron')
+cron.schedule('56 * * * *', function() {
+  console.log('every hour')
+  for (var url in cache) {
+    console.log('fetch', url)
+
+  }
+})
   
 function generateSitemap() {
   let sitemap = '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
@@ -205,13 +218,8 @@ function parse (document) {
   
 }
 
-var bwH;
-
-var cache = {}
-var crypto = require('crypto')
-
-
 function cache_hashkey (url) {
+  return url
   let shasum = crypto.createHash('sha1')
   shasum.update(url)
   return shasum.digest('hex')
@@ -232,14 +240,16 @@ function cache_load(url) {
 app.get('*', (req, res) => {
   let url = 'https://www.notion.so'
   let uri = req.originalUrl.substring(1)
+  console.log('uri', req.originalUrl)
   if (SLUG_TO_PAGE.hasOwnProperty(uri)) {
     url += '/' + SLUG_TO_PAGE[uri]
+    console.log('redirect', uri, url)
     return res.redirect(301, '/' + SLUG_TO_PAGE[uri])
   }  
   else url += req.originalUrl
 
   console.log('proxy_pass', url)
-  const c = cache_load(url)
+
   
   bwH = req.headers
   delete bwH['host']
@@ -251,6 +261,7 @@ app.get('*', (req, res) => {
   res.removeHeader('Content-Security-Policy')
   res.removeHeader('X-Content-Security-Policy')
   
+  const c = cache_load(url)
   if (c) {
     console.log('tornem cache')
     return res.send(c)
