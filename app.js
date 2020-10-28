@@ -89,6 +89,7 @@ function parseHead (element) {
     element.innerHTML += `<link href="https://fonts.googleapis.com/css?family=${GOOGLE_FONT.replace(' ', '+')}:Regular,Bold,Italic&display=swap" rel="stylesheet">
     <style>* { font-family: "${GOOGLE_FONT}" !important; }</style>`;
   }
+  /*
   element.innerHTML += `<style>
   div.notion-topbar > div > div:nth-child(3) { display: none !important; }
   div.notion-topbar > div > div:nth-child(4) { display: none !important; }
@@ -99,6 +100,7 @@ function parseHead (element) {
   div.notion-topbar > div > div:nth-child(1n).toggle-mode { display: block !important; }
   div.notion-topbar-mobile > div:nth-child(1n).toggle-mode { display: block !important; }
   </style>`
+  */
 }
 
 function parseBody (element) {
