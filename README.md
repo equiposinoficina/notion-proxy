@@ -3,32 +3,32 @@ Turn your Notion pages into a Website with your URLs and customizations
 
 # Clone and run
 
-`
+```bash
 git clone https://github.com/equiposinoficina/notion-proxy.git
 cd notion-proxy
 npm install
 node index.js
-`
+```
 
 # Run using docker-compose
 
 Assume you have docker-compose installed
 
-`
+```bash
 docker-compose up -d
-`
+```
 
 If you have any errors, just debug with:
 
-`
+```bash
 docker-compose up
-`
+```
 
 
 ## Using nginx as reverse proxy and SSL with Let's encrypt
 
 ### http redirect to https
-`
+```
 server {
     listen 80;
     server_name YOUR_DOMAIN.TLD;
@@ -41,10 +41,10 @@ server {
         return 301 https://$host$request_uri;
     }
 }
-`
+```
 
 ### reverse proxy for notion-proxy
-`
+```
 server {
     listen 443 ssl;
     server_name YOUR_DOMAIN.TLD;
@@ -91,7 +91,7 @@ server {
         etag off;
     }
 }
-`
+```
 
 # License
 [GNU General Public License v3.0](https://github.com/equiposinoficina/notion-proxy/blob/main/LICENSE)
