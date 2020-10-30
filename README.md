@@ -3,7 +3,7 @@ Turn your Notion pages into a Website with your URLs and customizations
 
 # Solution schema
 
-![notion-proxy schema]()
+![notion-proxy schema](https://raw.githubusercontent.com/equiposinoficina/notion-proxy/main/images/notion-proxy-schema.png)
 
 # Clone and run
 
@@ -47,7 +47,7 @@ At least change the variable values:
 
 If you don't know how to get the notion page ID, may be this screenshot will help you:
 
-![notion page ID]()
+![notion page ID](https://raw.githubusercontent.com/equiposinoficina/notion-proxy/main/images/notion-page-id.png)
 
 # Launch 'notion-proxy' with docker-compose
 
