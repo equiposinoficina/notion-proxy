@@ -20,7 +20,11 @@ const SLUG_TO_PAGE = config.get('SLUG_TO_PAGE')
 const PAGE_TITLE = config.get('PAGE_TITLE')
 const PAGE_DESCRIPTION = config.get('PAGE_DESCRIPTION')
 const GOOGLE_FONT = config.get('GOOGLE_FONT')
-const CUSTOM_SCRIPT = config.get('CUSTOM_SCRIPT')
+const CUSTOM_SCRIPT_FILE = config.get('CUSTOM_SCRIPT_FILE')
+
+var fs = require('fs');
+
+const CUSTOM_SCRIPT = fs.readFileSync(CUSTOM_SCRIPT_FILE, 'utf8');
 
 var bwH;
 var cache = {}
@@ -61,8 +65,9 @@ function parseMeta(element) {
         || element.getAttribute('name') === 'twitter:title') {
         element.setAttribute('content', PAGE_TITLE);
       }
-      if (element.tagName === 'title') {
-        element.setInnerContent(PAGE_TITLE);
+      if (element.tagName === 'TITLE') {
+        element.innerHTML = PAGE_TITLE;
+        element.innerText = PAGE_TITLE;
       }
     }
     if (PAGE_DESCRIPTION !== '') {
@@ -80,7 +85,7 @@ function parseMeta(element) {
       element.remove();
     }
   } catch (e) {
-    // console.log(e)
+    console.log(e)
   }
 }
   
