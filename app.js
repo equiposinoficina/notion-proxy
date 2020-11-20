@@ -43,7 +43,6 @@ cron.schedule('56 * * * *', function() {
   console.log('every hour')
   for (var url in cache) {
     console.log('fetch', url)
-
   }
 })
   
