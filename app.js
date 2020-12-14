@@ -225,8 +225,13 @@ app.get('*', (req, res) => {
     url += '/' + SLUG_TO_PAGE[uri]
     console.log('redirect', uri, url)
     return res.redirect(301, '/' + SLUG_TO_PAGE[uri])
-  }  
-  else url += req.originalUrl
+  } else if (req.originalUrl.startsWith('/image/https:/')) {
+    let uri = req.originalUrl.replace('https:/s3','https://s3')
+    const sub_url = uri.substring(7)
+    const sub_url_noparam = sub_url.split('?')[0]
+    const sub_url_param = sub_url.split('?')[1]
+    url += '/image/' + encodeURIComponent(sub_url_noparam) + '?' + sub_url_param
+  } else url += req.originalUrl
 
   console.log('proxy_pass', url)
 
