@@ -91,7 +91,10 @@ function parseMeta(element) {
 function parseHead (element) {
   if (GOOGLE_FONT !== '') {
     element.innerHTML += `<link href="https://fonts.googleapis.com/css?family=${GOOGLE_FONT.replace(' ', '+')}:Regular,Bold,Italic&display=swap" rel="stylesheet">
-    <style>* { font-family: "${GOOGLE_FONT}" !important; }</style>`;
+    <style>* { font-family: "${GOOGLE_FONT}" !important; }
+    .notion-topbar { display: none; }
+    </style>`;
+    // hide top-bar
   }
   /*
   element.innerHTML += `<style>
@@ -178,6 +181,8 @@ function parseBody (element) {
     arguments[1] = arguments[1].replace('${MY_DOMAIN}', 'www.notion.so');
     return open.apply(this, [].slice.call(arguments));
   };
+  <!-- required for comments identification -->
+  document.notionPageID = getPage();
 </script>${CUSTOM_SCRIPT}`
 }
 
