@@ -93,21 +93,12 @@ function parseHead (element) {
     element.innerHTML += `<link href="https://fonts.googleapis.com/css?family=${GOOGLE_FONT.replace(' ', '+')}:Regular,Bold,Italic&display=swap" rel="stylesheet">
     <style>* { font-family: "${GOOGLE_FONT}" !important; }
     .notion-topbar { display: none; }
+    .notion-selectable.notion-collection_view-block > div > div > div > a { display: none!important; }
     </style>`;
     // hide top-bar
+    // hide top bar of gallery tables
   }
-  /*
-  element.innerHTML += `<style>
-  div.notion-topbar > div > div:nth-child(3) { display: none !important; }
-  div.notion-topbar > div > div:nth-child(4) { display: none !important; }
-  div.notion-topbar > div > div:nth-child(5) { display: none !important; }
-  div.notion-topbar > div > div:nth-child(6) { display: none !important; }
-  div.notion-topbar-mobile > div:nth-child(3) { display: none !important; }
-  div.notion-topbar-mobile > div:nth-child(4) { display: none !important; }
-  div.notion-topbar > div > div:nth-child(1n).toggle-mode { display: block !important; }
-  div.notion-topbar-mobile > div:nth-child(1n).toggle-mode { display: block !important; }
-  </style>`
-  */
+
 }
 
 function parseBody (element) {
@@ -300,7 +291,9 @@ app.post('*', (req, res) => {
       },
       method: 'POST',
       },(error, meta, body) => {
-        return res.send(body.toString())
+        let out = "ERROR"
+        if (body !== undefined) out = body.toString()
+        return res.send(out)
     })
   }
 })
