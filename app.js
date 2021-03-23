@@ -85,6 +85,7 @@ function parseMeta(element) {
     }
   } catch (e) {
     console.log(e)
+    process.exit(1)
   }
 }
   
@@ -264,6 +265,10 @@ app.get('*', (req, res) => {
       cache_save(meta, bs)
       return res.send(bs)
     } else {
+      if (meta === undefined) {
+        cache_save(meta, body)
+        return res.send(body)
+      }
       if (meta.responseHeaders['content-type'].includes('text/')) {
         const dom = new JSDOM(body.toString(), { includeNodeLocations: true })
         parse(dom.window.document)
@@ -301,4 +306,9 @@ app.post('*', (req, res) => {
 
 app.listen(port, () => {
   console.log(`Example app listening at http://localhost:${port}`)
+})
+
+process.on('uncaughtException', err => {
+  console.log(`Uncaught Exception: ${err.message}`)
+  process.exit(1)
 })
