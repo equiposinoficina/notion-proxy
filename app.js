@@ -21,10 +21,12 @@ const PAGE_TITLE = config.get('PAGE_TITLE')
 const PAGE_DESCRIPTION = config.get('PAGE_DESCRIPTION')
 const GOOGLE_FONT = config.get('GOOGLE_FONT')
 const CUSTOM_SCRIPT_FILE = config.get('CUSTOM_SCRIPT_FILE')
+const ROBOTS_FILE = config.get('ROBOTS_FILE')
 
 var fs = require('fs');
 
 const CUSTOM_SCRIPT = fs.readFileSync(CUSTOM_SCRIPT_FILE, 'utf8');
+const ROBOTS = fs.readFileSync(ROBOTS_FILE, 'utf8');
 
 var bwH;
 var cache = {}
@@ -47,15 +49,22 @@ cron.schedule('56 * * * *', function() {
 })
   
 function generateSitemap() {
-  let sitemap = '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+  let sitemap = '<?xml version="1.0" encoding="utf-8"?>'
+  sitemap += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">'
   slugs.forEach(
     (slug) =>
       (sitemap +=
         '<url><loc>https://' + MY_DOMAIN + '/' + slug + '</loc></url>')
   );
-  sitemap += '</urlset>';
-  return sitemap;
+  sitemap += '</urlset>'
+  return sitemap
 }
+
+app.get('/sitemap.xml', (req, res) => {
+  res.set('Content-Type', 'application/xml; charset=utf-8')
+
+  return res.send(generateSitemap())
+})
 
 function parseMeta(element) {
   try {
@@ -213,6 +222,11 @@ function cache_load(url) {
   return null
 }
 
+app.get('/robots.txt', (req, res) => {
+  res.set('Content-Type', 'text/plain')
+
+  return res.send(ROBOTS)
+})
 
 app.get('*', (req, res) => {
   let url = 'https://www.notion.so'
