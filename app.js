@@ -10,7 +10,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const app = express()
 app.use(cors())
-app.use(bodyParser.raw({ type: "application/json" }))
+app.use(express.raw({ type: "application/json" }))
 const config = require('config')
 
 const host = config.get('host')
@@ -22,6 +22,7 @@ const PAGE_DESCRIPTION = config.get('PAGE_DESCRIPTION')
 const GOOGLE_FONT = config.get('GOOGLE_FONT')
 const CUSTOM_SCRIPT_FILE = config.get('CUSTOM_SCRIPT_FILE')
 const ROBOTS_FILE = config.get('ROBOTS_FILE')
+const CACHE_TTL = config.get('CACHE_TTL')
 
 var fs = require('fs');
 
@@ -41,10 +42,14 @@ Object.keys(SLUG_TO_PAGE).forEach(slug => {
 })
 
 var cron = require('node-cron')
-cron.schedule('56 * * * *', function() {
+cron.schedule('45 * * * *', function() {
   console.log('every hour')
-  for (var url in cache) {
-    console.log('fetch', url)
+  let now = new Date().getTime()
+  for (var item in cache) {
+    if (now > cache[item].ts + (CACHE_TTL * 1000)) {
+      delete cache[item]
+      console.log('[CACHE] removed: ', item)
+    }
   }
 })
   
@@ -213,12 +218,16 @@ function cache_hashkey (url) {
 
 function cache_save( meta, body) {
   const key = cache_hashkey(meta.finalUrl)
-  cache[key] = body
+  cache[key] = {}
+  cache[key].body = body
+  cache[key].ts = new Date().getTime()
 }
 
 function cache_load(url) {
   const key = cache_hashkey(url)
-  if (key in cache) return cache[key]
+  if (key in cache) {
+    return cache[key].body
+  }
   return null
 }
 
