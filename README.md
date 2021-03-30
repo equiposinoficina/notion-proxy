@@ -36,7 +36,9 @@ Customize the configuration:
   "PAGE_TITLE": "",
   "PAGE_DESCRIPTION": "",
   "GOOGLE_FONT": "",
-  "CUSTOM_SCRIPT": ""
+  "CUSTOM_SCRIPT_FILE": "./config/custom.script",
+  "ROBOTS_FILE": "./config/robots.txt",
+  "CACHE_TTL": 86400
 }
 ```
 
