@@ -196,7 +196,7 @@ function parseBody (element) {
 
 function parse (document) {
   let title = document.querySelector('title')
-  parseMeta(title)
+  if (title) parseMeta(title)
   
   let metas = document.querySelectorAll('meta')
   for (var  m = 0; m < metas.length; m++) {
@@ -204,10 +204,10 @@ function parse (document) {
   }
   
   let head = document.querySelector('head')
-  parseHead(head)
+  if (head) parseHead(head)
   
   let tagBody = document.querySelector('body')
-  parseBody(tagBody)
+  if (tagBody) parseBody(tagBody)
   
 }
 

@@ -1,6 +1,9 @@
 # configuration
 config/*.json
 
+# scripts
+scripts/
+
 # Logs
 logs
 *.log
