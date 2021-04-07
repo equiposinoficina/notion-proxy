@@ -2,12 +2,14 @@
   "host": "127.0.0.1",
   "port": 3333,
   "my_domain": "YOUR-PUBLIC-DOMAIN",
-  "SLUG_TO_PAGE": {
-    "": "NOTION_PAGE_ID"
-  },
   "PAGE_TITLE": "",
   "PAGE_DESCRIPTION": "",
   "GOOGLE_FONT": "",
+  "SLUG_CACHE": "./cache/slugs.json",
+  "SLUG_TO_PAGE": {
+    "": "NOTION_PAGE_ID"
+  },
+
   "CUSTOM_SCRIPT_FILE": "./config/custom.script",
   "ROBOTS_FILE": "./config/robots.txt",
   "CACHE_TTL": 86400
