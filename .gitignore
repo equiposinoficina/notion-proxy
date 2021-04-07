@@ -1,8 +1,11 @@
 # configuration
 config/*.json
 
+# cache
+cache/
+
 # scripts
-scripts/
+scripts/config/*.json
 
 # Logs
 logs

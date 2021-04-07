@@ -18,7 +18,8 @@ const config = require('config')
 const host = config.get('host')
 const port = config.get('port')
 const MY_DOMAIN = config.get('my_domain')
-const SLUG_TO_PAGE = config.get('SLUG_TO_PAGE')
+const SLUG_CACHE = config.get('SLUG_CACHE')
+var SLUG_TO_PAGE = config.get('SLUG_TO_PAGE')
 const PAGE_TITLE = config.get('PAGE_TITLE')
 const PAGE_DESCRIPTION = config.get('PAGE_DESCRIPTION')
 const GOOGLE_FONT = config.get('GOOGLE_FONT')
@@ -28,20 +29,28 @@ const CACHE_TTL = config.get('CACHE_TTL')
 
 var fs = require('fs');
 
-const CUSTOM_SCRIPT = fs.readFileSync(CUSTOM_SCRIPT_FILE, 'utf8');
-const ROBOTS = fs.readFileSync(ROBOTS_FILE, 'utf8');
+const CUSTOM_SCRIPT = fs.readFileSync(CUSTOM_SCRIPT_FILE, 'utf8')
+const ROBOTS = fs.readFileSync(ROBOTS_FILE, 'utf8')
 
 var bwH;
-var cache = {}
-const PAGE_TO_SLUG = {}
-const slugs = []
-const pages = []
+var cache = {};
+var PAGE_TO_SLUG = {};
 Object.keys(SLUG_TO_PAGE).forEach(slug => {
-  const page = SLUG_TO_PAGE[slug]
-  slugs.push(slug)
-  pages.push(page)
-  PAGE_TO_SLUG[page] = slug
+  let page = SLUG_TO_PAGE[slug];
+  PAGE_TO_SLUG[page] = slug;
 })
+
+var aux = {}
+const fslugs = fs.readFileSync(SLUG_CACHE, 'utf8')
+const jslugs = JSON.parse(fslugs)
+Object.keys(jslugs['page_slug']).forEach(i => {
+  let page = jslugs['page_slug'][i];
+  const slug = page['slug'];
+  const uid = page['page'].split('-').pop();
+  PAGE_TO_SLUG[uid] = slug;
+  aux[slug] = uid;
+})
+SLUG_TO_PAGE = {...SLUG_TO_PAGE, ...aux};
 
 var cron = require('node-cron')
 cron.schedule('45 * * * *', function() {
@@ -54,15 +63,13 @@ cron.schedule('45 * * * *', function() {
     }
   }
 })
-  
+
 function generateSitemap() {
   let sitemap = '<?xml version="1.0" encoding="utf-8"?>'
   sitemap += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">'
-  slugs.forEach(
-    (slug) =>
-      (sitemap +=
-        '<url><loc>https://' + MY_DOMAIN + '/' + slug + '</loc></url>')
-  );
+  for (var slug in SLUG_TO_PAGE) {
+      sitemap += '<url><loc>https://' + MY_DOMAIN + '/' + slug + '</loc></url>'
+  };
   sitemap += '</urlset>'
   return sitemap
 }
