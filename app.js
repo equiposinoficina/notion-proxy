@@ -17,7 +17,7 @@ parser.init(config)
 const server_host = config.get('host')
 const server_port = config.get('port')
 const MY_DOMAIN = config.get('my_domain')
-const SLUG_CACHE = config.get('SLUG_CACHE')
+const SLUG_CACHE = config.has('SLUG_CACHE') ? config.get('SLUG_CACHE') : ""
 var SLUG_TO_PAGE = config.get('SLUG_TO_PAGE')
 
 const ROBOTS_FILE = config.get('ROBOTS_FILE')
@@ -33,15 +33,19 @@ Object.keys(SLUG_TO_PAGE).forEach(slug => {
 })
 
 var aux = {}
-const fslugs = fs.readFileSync(SLUG_CACHE, 'utf8')
-const jslugs = JSON.parse(fslugs)
-Object.keys(jslugs['page_slug']).forEach(i => {
-  let page = jslugs['page_slug'][i];
-  const slug = page['slug'];
-  const uid = page['page'].split('-').pop();
-  PAGE_TO_SLUG[uid] = slug;
-  aux[slug] = uid;
-})
+try {
+  const fslugs = fs.readFileSync(SLUG_CACHE, 'utf8')
+  const jslugs = JSON.parse(fslugs)
+  Object.keys(jslugs['page_slug']).forEach(i => {
+    let page = jslugs['page_slug'][i];
+    const slug = page['slug'];
+    const uid = page['page'].split('-').pop();
+    PAGE_TO_SLUG[uid] = slug;
+    aux[slug] = uid;
+  })
+} catch (e) {
+  console.info(`No slug cache file or format missmatch: ${SLUG_CACHE}`)
+}
 SLUG_TO_PAGE = {...SLUG_TO_PAGE, ...aux}
 parser.SLUG_TO_PAGE = SLUG_TO_PAGE
 
