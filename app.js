@@ -1,39 +1,31 @@
-var crypto = require('crypto')
-var sslRootCAs = require('ssl-root-cas/latest')
-sslRootCAs.inject()
 const fetch = require('fetch').fetchUrl
 const mime = require('mime-types')
-const jsdom = require("jsdom")
-const { JSDOM } = jsdom
-var cors = require('cors')
+const JSDOM = require("jsdom").JSDOM
+const fs = require('fs')
+const cors = require('cors')
 const compression = require('compression')
 const express = require('express')
-const bodyParser = require('body-parser')
-const app = express()
-app.use(compression())
-app.use(cors())
-app.use(express.raw({ type: "application/json" }))
-const config = require('config')
+const cache = require('./cache');
+const parser = require('./parser');
 
-const host = config.get('host')
-const port = config.get('port')
+// var crypto = require('crypto')
+const sslRootCAs = require('ssl-root-cas/latest')
+sslRootCAs.inject()
+
+const config = require('config')
+parser.init(config)
+const server_host = config.get('host')
+const server_port = config.get('port')
 const MY_DOMAIN = config.get('my_domain')
 const SLUG_CACHE = config.get('SLUG_CACHE')
 var SLUG_TO_PAGE = config.get('SLUG_TO_PAGE')
-const PAGE_TITLE = config.get('PAGE_TITLE')
-const PAGE_DESCRIPTION = config.get('PAGE_DESCRIPTION')
-const GOOGLE_FONT = config.get('GOOGLE_FONT')
-const CUSTOM_SCRIPT_FILE = config.get('CUSTOM_SCRIPT_FILE')
+
 const ROBOTS_FILE = config.get('ROBOTS_FILE')
-const CACHE_TTL = config.get('CACHE_TTL')
+cache.CACHE_TTL = config.get('CACHE_TTL')
 
-var fs = require('fs');
-
-const CUSTOM_SCRIPT = fs.readFileSync(CUSTOM_SCRIPT_FILE, 'utf8')
 const ROBOTS = fs.readFileSync(ROBOTS_FILE, 'utf8')
 
 var bwH;
-var cache = {};
 var PAGE_TO_SLUG = {};
 Object.keys(SLUG_TO_PAGE).forEach(slug => {
   let page = SLUG_TO_PAGE[slug];
@@ -50,19 +42,44 @@ Object.keys(jslugs['page_slug']).forEach(i => {
   PAGE_TO_SLUG[uid] = slug;
   aux[slug] = uid;
 })
-SLUG_TO_PAGE = {...SLUG_TO_PAGE, ...aux};
+SLUG_TO_PAGE = {...SLUG_TO_PAGE, ...aux}
+parser.SLUG_TO_PAGE = SLUG_TO_PAGE
 
-var cron = require('node-cron')
-cron.schedule('45 * * * *', function() {
-  console.log('every hour')
-  let now = new Date().getTime()
-  for (var item in cache) {
-    if (now > cache[item].ts + (CACHE_TTL * 1000)) {
-      delete cache[item]
-      console.log('[CACHE] removed: ', item)
-    }
-  }
+const app = express()
+app.use(compression())
+app.use(cors())
+app.use(express.raw({ type: "application/json" }))
+
+app.listen(server_port, server_host, () => {
+  console.log(`Example app listening at http://${server_host}:${server_port}`)
 })
+
+process.on('uncaughtException', err => {
+  console.log(`Uncaught Exception: ${err.message}`)
+  process.exit(1)
+})
+
+function RedirectException(message) {
+  this.message = message;
+  this.name = "RedirectException";
+}
+
+function parse (document) {
+  let title = document.querySelector('title')
+  if (title) parser.parseMeta(title)
+  
+  let metas = document.querySelectorAll('meta')
+  for (var  m = 0; m < metas.length; m++) {
+    parser.parseMeta(metas[m])
+  }
+  
+  let head = document.querySelector('head')
+  if (head) parser.parseHead(head)
+  
+  let tagBody = document.querySelector('body')
+  if (tagBody) parser.parseBody(tagBody)
+  
+}
 
 function generateSitemap() {
   let sitemap = '<?xml version="1.0" encoding="utf-8"?>'
@@ -74,186 +91,15 @@ function generateSitemap() {
   return sitemap
 }
 
-app.get('/sitemap.xml', (req, res) => {
-  res.set('Content-Type', 'application/xml; charset=utf-8')
-
-  return res.send(generateSitemap())
-})
-
-function parseMeta(element) {
-  try {
-    if (PAGE_TITLE !== '') {
-      if (element.getAttribute('property') === 'og:title'
-        || element.getAttribute('name') === 'twitter:title') {
-        element.setAttribute('content', PAGE_TITLE);
-      }
-      if (element.tagName === 'TITLE') {
-        element.innerHTML = PAGE_TITLE;
-        element.innerText = PAGE_TITLE;
-      }
-    }
-    if (PAGE_DESCRIPTION !== '') {
-      if (element.getAttribute('name') === 'description'
-        || element.getAttribute('property') === 'og:description'
-        || element.getAttribute('name') === 'twitter:description') {
-        element.setAttribute('content', PAGE_DESCRIPTION);
-      }
-    }
-    if (element.getAttribute('property') === 'og:url'
-      || element.getAttribute('name') === 'twitter:url') {
-      element.setAttribute('content', MY_DOMAIN);
-    }
-    if (element.getAttribute('name') === 'apple-itunes-app') {
-      element.remove();
-    }
-  } catch (e) {
-    console.log(e)
-    process.exit(1)
-  }
-}
-  
-function parseHead (element) {
-  if (GOOGLE_FONT !== '') {
-    element.innerHTML += `<link href="https://fonts.googleapis.com/css?family=${GOOGLE_FONT.replace(' ', '+')}:Regular,Bold,Italic&display=swap" rel="stylesheet">
-    <style>* { font-family: "${GOOGLE_FONT}" !important; }
-    .notion-topbar { display: none; }
-    .notion-selectable.notion-collection_view-block > div > div > div > a { display: none!important; }
-    </style>`;
-    // hide top-bar
-    // hide top bar of gallery tables
-  }
-
-}
-
-function parseBody (element) {
-  element.innerHTML += `
-  <script>
-  const SLUG_TO_PAGE =  ${JSON.stringify(SLUG_TO_PAGE)};
-  const PAGE_TO_SLUG = {};
-  const slugs = [];
-  const pages = [];
-  const el = document.createElement('div');
-  let redirected = false;
-  Object.keys(SLUG_TO_PAGE).forEach(slug => {
-    const page = SLUG_TO_PAGE[slug];
-    slugs.push(slug);
-    pages.push(page);
-    PAGE_TO_SLUG[page] = slug;
-  });
-  function getPage() {
-    return location.pathname.slice(-32);
-  }
-  function getSlug() {
-    return location.pathname.slice(1);
-  }
-  function updateSlug() {
-    const slug = PAGE_TO_SLUG[getPage()];
-    if (slug != null) {
-      history.replaceState(history.state, '', '/' + slug);
-    }
-  }
-  const observer = new MutationObserver(function() {
-    if (redirected) return;
-    const nav = document.querySelector('.notion-topbar');
-    const mobileNav = document.querySelector('.notion-topbar-mobile');
-    if (nav && nav.firstChild && nav.firstChild.firstChild
-      || mobileNav && mobileNav.firstChild) {
-      redirected = true;
-      updateSlug();
-      const onpopstate = window.onpopstate;
-      window.onpopstate = function() {
-        if (slugs.includes(getSlug())) {
-          const page = SLUG_TO_PAGE[getSlug()];
-          if (page) {
-            history.replaceState(history.state, 'bypass', '/' + page);
-          }
-        }
-        onpopstate.apply(this, [].slice.call(arguments));
-        updateSlug();
-      };
-    }
-  });
-  observer.observe(document.querySelector('#notion-app'), {
-    childList: true,
-    subtree: true,
-  });
-  const replaceState = window.history.replaceState;
-  window.history.replaceState = function(state) {
-    if (arguments[1] !== 'bypass' && slugs.includes(getSlug())) return;
-    return replaceState.apply(window.history, arguments);
-  };
-  const pushState = window.history.pushState;
-  window.history.pushState = function(state) {
-    const dest = new URL(location.protocol + location.host + arguments[2]);
-    const id = dest.pathname.slice(-32);
-    if (pages.includes(id)) {
-      arguments[2] = '/' + PAGE_TO_SLUG[id];
-    }
-    return pushState.apply(window.history, arguments);
-  };
-  const open = window.XMLHttpRequest.prototype.open;
-  window.XMLHttpRequest.prototype.open = function() {
-    arguments[1] = arguments[1].replace('${MY_DOMAIN}', 'www.notion.so');
-    return open.apply(this, [].slice.call(arguments));
-  };
-  <!-- required for comments identification -->
-  document.notionPageID = getPage();
-</script>${CUSTOM_SCRIPT}`
-}
-
-function parse (document) {
-  let title = document.querySelector('title')
-  if (title) parseMeta(title)
-  
-  let metas = document.querySelectorAll('meta')
-  for (var  m = 0; m < metas.length; m++) {
-    parseMeta(metas[m])
-  }
-  
-  let head = document.querySelector('head')
-  if (head) parseHead(head)
-  
-  let tagBody = document.querySelector('body')
-  if (tagBody) parseBody(tagBody)
-  
-}
-
-function cache_hashkey (url) {
-  return url
-  let shasum = crypto.createHash('sha1')
-  shasum.update(url)
-  return shasum.digest('hex')
-}
-
-function cache_save( meta, body) {
-  const key = cache_hashkey(meta.finalUrl)
-  cache[key] = {}
-  cache[key].body = body
-  cache[key].ts = new Date().getTime()
-}
-
-function cache_load(url) {
-  const key = cache_hashkey(url)
-  if (key in cache) {
-    return cache[key].body
-  }
-  return null
-}
-
-app.get('/robots.txt', (req, res) => {
-  res.set('Content-Type', 'text/plain')
-
-  return res.send(ROBOTS)
-})
-
-app.get('*', (req, res) => {
+function get_notion_url(req, res) {
   let url = 'https://www.notion.so'
   let uri = req.originalUrl.substring(1)
   console.log('uri', req.originalUrl)
   if (SLUG_TO_PAGE.hasOwnProperty(uri)) {
     url += '/' + SLUG_TO_PAGE[uri]
     console.log('redirect', uri, url)
-    return res.redirect(301, '/' + SLUG_TO_PAGE[uri])
+    // return res.redirect(301, '/' + SLUG_TO_PAGE[uri])
+    throw new RedirectException(SLUG_TO_PAGE[uri]);
   } else if (req.originalUrl.startsWith('/image/https:/')) {
     let uri = req.originalUrl.replace('https:/s3','https://s3')
     const sub_url = uri.substring(7)
@@ -262,9 +108,47 @@ app.get('*', (req, res) => {
     url += '/image/' + encodeURIComponent(sub_url_noparam) + '?' + sub_url_param
   } else url += req.originalUrl
 
-  console.log('proxy_pass', url)
+  return url
+}
 
+function create_response(error, meta, body, req, res) {
+  if (req.originalUrl.startsWith('/app') && req.originalUrl.endsWith('js')) {
+    res.set('Content-Type', 'application/x-javascript')
+    body = body.toString().replace(/www.notion.so/g, MY_DOMAIN).replace(/notion.so/g, MY_DOMAIN)
+  } else if (req.originalUrl.endsWith('css') || req.originalUrl.endsWith('js')) {
+    body = body.toString()
+  } else if (meta !== undefined && meta.responseHeaders['content-type'].includes('text/')) {
+    const dom = new JSDOM(body.toString(), { includeNodeLocations: true })
+    parse(dom.window.document)
+    body = dom.serialize()
+  }
+  return body
+}
+
+app.get('/sitemap.xml', (req, res) => {
+  res.set('Content-Type', 'application/xml; charset=utf-8')
+
+  return res.send(generateSitemap())
+})
+
+app.get('/robots.txt', (req, res) => {
+  res.set('Content-Type', 'text/plain')
+
+  return res.send(ROBOTS)
+})
+
+app.get('*', (req, res) => {
+  console.log(req.originalUrl)
+
+  try {
+    var url = get_notion_url(req, res)
+    console.log('proxy_pass', url)
+  } catch (e) {
+    if (e instanceof RedirectException) return res.redirect(301, '/' + e.message)
+    // report internal error and return 500
+  }
   
+
   bwH = req.headers
   delete bwH['host']
   delete bwH['referer']
@@ -275,7 +159,7 @@ app.get('*', (req, res) => {
   res.removeHeader('Content-Security-Policy')
   res.removeHeader('X-Content-Security-Policy')
   
-  const c = cache_load(url)
+  const c = cache.load(url)
   if (c) {
     console.log('tornem cache')
     return res.send(c)
@@ -287,33 +171,10 @@ app.get('*', (req, res) => {
     redirect: 'follow',
     method: 'GET',
     }, (error, meta, body) => {
-    if (req.originalUrl.startsWith('/app') && req.originalUrl.endsWith('js')) {
-      res.set('Content-Type', 'application/x-javascript')
-      body = body.toString().replace(/www.notion.so/g, MY_DOMAIN).replace(/notion.so/g, MY_DOMAIN)
-      cache_save(meta, body)
-      return res.send(body)
-    } else if (req.originalUrl.endsWith('css') || req.originalUrl.endsWith('js')) {
-      const bs = body.toString()
-      cache_save(meta, bs)
-      return res.send(bs)
-    } else {
-      if (meta === undefined) {
-        cache_save(meta, body)
-        return res.send(body)
-      }
-      if (meta.responseHeaders['content-type'].includes('text/')) {
-        const dom = new JSDOM(body.toString(), { includeNodeLocations: true })
-        parse(dom.window.document)
-        const ds = dom.serialize()
-        cache_save(meta, ds)
-        return res.send(ds)
-      } else {
-        cache_save(meta, body)
-        return res.send(body)
-      }
-    }
-  })
-
+      body = create_response(error, meta, body, req, res);
+      cache.save(meta, body);
+      return res.send(body);
+    })
 })
 
 app.post('*', (req, res) => {
@@ -333,14 +194,4 @@ app.post('*', (req, res) => {
         return res.send(out)
     })
   }
-})
-
-
-app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`)
-})
-
-process.on('uncaughtException', err => {
-  console.log(`Uncaught Exception: ${err.message}`)
-  process.exit(1)
 })

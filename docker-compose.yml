@@ -10,7 +10,7 @@ services:
     restart: unless-stopped
     #env_file: .env
     ports:
-      - "3333:3333"
+      - "127.0.0.1:3333:3333"
     volumes:
       - ./config:/notion-proxy/config
       - ./cache:/notion-proxy/cache
