@@ -47,7 +47,7 @@ try {
   console.info(`No slug cache file or format missmatch: ${SLUG_CACHE}`)
 }
 SLUG_TO_PAGE = {...SLUG_TO_PAGE, ...aux}
-parser.SLUG_TO_PAGE = SLUG_TO_PAGE
+parser.setSlugToPage(SLUG_TO_PAGE)
 
 const app = express()
 app.use(compression())

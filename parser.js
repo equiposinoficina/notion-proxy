@@ -16,6 +16,10 @@ function init(config) {
   CUSTOM_SCRIPT = fs.readFileSync(CUSTOM_SCRIPT_FILE, 'utf8')
 }
 
+function setSlugToPage(stp) {
+  SLUG_TO_PAGE = stp
+}
+
 function parseMeta(element) {
   try {
     if (PAGE_TITLE !== '') {
@@ -138,7 +142,7 @@ function parseBody (element) {
 }
 
 module.exports = {
-  SLUG_TO_PAGE: SLUG_TO_PAGE,
+  setSlugToPage: setSlugToPage,
   init: init,
   parseMeta: parseMeta,
   parseHead: parseHead,
