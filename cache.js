@@ -13,6 +13,10 @@ cron.schedule('45 * * * *', function() {
   }
 })
 
+function setTTL(TTL) {
+  CACHE_TTL = TTL
+}
+
 function hashkey (url) {
   return url
   let shasum = crypto.createHash('sha1')
@@ -36,7 +40,7 @@ function load(url) {
 }
 
 module.exports = {
-  CACHE_TTL: CACHE_TTL,
+  setTTL: setTTL,
   hashkey: hashkey,
   save: save,
   load: load

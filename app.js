@@ -21,7 +21,7 @@ const SLUG_CACHE = config.has('SLUG_CACHE') ? config.get('SLUG_CACHE') : ""
 var SLUG_TO_PAGE = config.get('SLUG_TO_PAGE')
 
 const ROBOTS_FILE = config.get('ROBOTS_FILE')
-cache.CACHE_TTL = config.get('CACHE_TTL')
+cache.setTTL(config.get('CACHE_TTL'))
 
 const ROBOTS = fs.readFileSync(ROBOTS_FILE, 'utf8')
 
