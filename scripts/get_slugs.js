@@ -1,27 +1,49 @@
+// TODO: comprovar com es fa funcionar https://code.visualstudio.com/docs/nodejs/nodejs-debugging
+//  problema actual no es pilla fitxer de configuracio
+
 const { Client } = require('@notionhq/client');
 var fs = require('fs');
+const config = require('config');
+var slugify = require('slugify');
+
+const NOTION_API = config.get('NOTION_API');
+const DATABASE_IDS = config.get('DATABASE_IDS');
+const SLUGS_JSON = config.get('SLUGS_JSON');
 
 const notion = new Client({ auth: NOTION_API });
 
 (async () => {
   var json = {};
   json.page_slug = [];
-  for (var [ dbName, dbId ] in Object.entries(DATABASE_IDS)) {
+  for (var [ dbName, dbId ] of Object.entries(DATABASE_IDS)) {
+    console.info(dbName, dbId);
     const response = await notion.databases.query({
-      database_id: DATABASE_IDS[dbId]
+      database_id: dbId
     });
-    let slug = {};
-    slug.page = 'https://www.notion.so/';
     for (var item in response.results) {
+      let slug = {};
+      slug.page = 'https://www.notion.so/';
       slug.page += response.results[item].id.split('-').join('');
       slug.slug = dbName + "/";
-      slug.slug += response.results[item].properties.slug.rich_text[0].plain_text;
-      json.page_slug.push(slug);
+      slug.perma_link = slug.slug;
+      if (response.results[item].properties.Name.title.length > 0) {
+        slug.slug += slugify(response.results[item].properties.Name.title[0].plain_text, {
+          remove: undefined,
+          strict: true,
+          lower: true,
+          locale: 'es'
+        })
+        slug.perma_link += response.results[item].properties['#'].number
+        json.page_slug.push(slug);
+      }
     }
   }
-  fs.writeFile('../cache/slugs.json', JSON.stringify(json), (e) => {
+  fs.writeFile(SLUGS_JSON, JSON.stringify(json), (e) => {
     if (e) {
       console.error(e);
+      // TODO: comprovar exit -1
     }
   })
 })();
+
+// TODO: comprovar exit 0
