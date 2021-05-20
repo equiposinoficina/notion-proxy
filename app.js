@@ -7,6 +7,7 @@ const compression = require('compression')
 const express = require('express')
 const cache = require('./cache');
 const parser = require('./parser');
+var cron = require('node-cron')
 
 // var crypto = require('crypto')
 const sslRootCAs = require('ssl-root-cas/latest')
@@ -32,22 +33,36 @@ Object.keys(SLUG_TO_PAGE).forEach(slug => {
   PAGE_TO_SLUG[page] = slug;
 })
 
-var aux = {}
-try {
-  const fslugs = fs.readFileSync(SLUG_CACHE, 'utf8')
-  const jslugs = JSON.parse(fslugs)
-  Object.keys(jslugs['page_slug']).forEach(i => {
-    let page = jslugs['page_slug'][i];
-    const slug = page['slug'];
-    const uid = page['page'].split('-').pop();
-    PAGE_TO_SLUG[uid] = slug;
-    aux[slug] = uid;
-  })
-} catch (e) {
-  console.info(`No slug cache file or format missmatch: ${SLUG_CACHE}`)
+function parse_slug() {
+  var aux = {}
+  try {
+    const fslugs = fs.readFileSync(SLUG_CACHE, 'utf8')
+    const jslugs = JSON.parse(fslugs)
+    Object.keys(jslugs['page_slug']).forEach(i => {
+      let page = jslugs['page_slug'][i];
+      const slug = page['slug'];
+      const uid = page['page'].split('-').pop();
+      PAGE_TO_SLUG[uid] = slug;
+      aux[slug] = uid;
+    })
+  } catch (e) {
+    console.info(`No slug cache file or format missmatch: ${SLUG_CACHE}`)
+  }
+  return aux;
 }
-SLUG_TO_PAGE = {...SLUG_TO_PAGE, ...aux}
+
+let s = parse_slug();
+console.log(s);
+
+SLUG_TO_PAGE = {...SLUG_TO_PAGE, ...s}
 parser.setSlugToPage(SLUG_TO_PAGE)
+
+cron.schedule('0 0 * * *', function() {
+  console.log('every day')
+  SLUG_TO_PAGE = {...SLUG_TO_PAGE, ...parse_slug()}
+  parser.setSlugToPage(SLUG_TO_PAGE)
+})
+
 
 const app = express()
 app.use(compression())

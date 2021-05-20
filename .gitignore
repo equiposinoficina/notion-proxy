@@ -6,6 +6,7 @@ cache/
 
 # scripts
 scripts/config/*.json
+scripts/OBSOLETE/config/*.json
 
 # Logs
 logs

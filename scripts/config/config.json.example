@@ -1,5 +1,7 @@
 {
-  "PROJECT_TOKEN": "",
-  "API_KEY": "",
+  "NOTION_API": "",
+  "DATABASE_IDS": [
+    "",
+  ],
   "SLUGS_JSON": "../cache/slugs.json"
 }
