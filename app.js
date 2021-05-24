@@ -33,6 +33,8 @@ Object.keys(SLUG_TO_PAGE).forEach(slug => {
   PAGE_TO_SLUG[page] = slug;
 })
 
+var PERMA_TO_PAGE = {};
+
 function parse_slug() {
   var aux = {}
   try {
@@ -42,8 +44,10 @@ function parse_slug() {
       let page = jslugs['page_slug'][i];
       const slug = page['slug'];
       const uid = page['page'].split('-').pop();
+      const perma_link = page['perma_link'];
       PAGE_TO_SLUG[uid] = slug;
       aux[slug] = uid;
+      PERMA_TO_PAGE[perma_link] = uid;
     })
   } catch (e) {
     console.info(`No slug cache file or format missmatch: ${SLUG_CACHE}`)
@@ -114,11 +118,14 @@ function get_notion_url(req, res) {
   let url = 'https://www.notion.so'
   let uri = req.originalUrl.substring(1)
   console.log('uri', req.originalUrl)
-  if (SLUG_TO_PAGE.hasOwnProperty(uri)) {
-    url += '/' + SLUG_TO_PAGE[uri]
+  if (PERMA_TO_PAGE.hasOwnProperty(uri)) {
+    url = PERMA_TO_PAGE[uri].split('/').pop();
+    console.log('redirect', uri, url);
+    throw new RedirectException(url);
+  } else if (SLUG_TO_PAGE.hasOwnProperty(uri)) {
+    url = SLUG_TO_PAGE[uri].split('/').pop();
     console.log('redirect', uri, url)
-    // return res.redirect(301, '/' + SLUG_TO_PAGE[uri])
-    throw new RedirectException(SLUG_TO_PAGE[uri]);
+    throw new RedirectException(url);
   } else if (req.originalUrl.startsWith('/image/https:/')) {
     let uri = req.originalUrl.replace('https:/s3','https://s3')
     const sub_url = uri.substring(7)
@@ -163,8 +170,10 @@ app.get('*', (req, res) => {
     var url = get_notion_url(req, res)
     console.log('proxy_pass', url)
   } catch (e) {
-    if (e instanceof RedirectException) return res.redirect(301, '/' + e.message)
-    // report internal error and return 500
+    if (e instanceof RedirectException)
+      return res.redirect(301, '/' + e.message);
+    else
+      res.status(500).send(e);
   }
   
 

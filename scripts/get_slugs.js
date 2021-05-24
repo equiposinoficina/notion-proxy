@@ -1,6 +1,3 @@
-// TODO: comprovar com es fa funcionar https://code.visualstudio.com/docs/nodejs/nodejs-debugging
-//  problema actual no es pilla fitxer de configuracio
-
 const { Client } = require('@notionhq/client');
 var fs = require('fs');
 const config = require('config');
@@ -41,9 +38,7 @@ const notion = new Client({ auth: NOTION_API });
   fs.writeFile(SLUGS_JSON, JSON.stringify(json), (e) => {
     if (e) {
       console.error(e);
-      // TODO: comprovar exit -1
+      process.exit(1);
     }
   })
 })();
-
-// TODO: comprovar exit 0

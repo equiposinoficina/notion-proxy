@@ -4,6 +4,7 @@
   "description": "Public page for Notion",
   "main": "index.js",
   "scripts": {
+    "start": "NODE_ENV=dev node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Equipo Sin Oficina",
