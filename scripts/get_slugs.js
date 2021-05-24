@@ -35,6 +35,10 @@ const notion = new Client({ auth: NOTION_API });
       }
     }
   }
+n  if (json.page_slug.length === 0) {
+    console.error('[ERROR] table content empyt, file not written.');
+    proxecc.exit(2);
+  }
   fs.writeFile(SLUGS_JSON, JSON.stringify(json), (e) => {
     if (e) {
       console.error(e);
