@@ -41,7 +41,7 @@ n  if (json.page_slug.length === 0) {
   }
   fs.writeFile(SLUGS_JSON, JSON.stringify(json), (e) => {
     if (e) {
-      console.error(e);
+      console.error('[ERROR] ' + e);
       process.exit(1);
     }
   })
