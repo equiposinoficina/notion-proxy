@@ -19,8 +19,7 @@ const notion = new Client({ auth: NOTION_API });
     });
     for (var item in response.results) {
       let slug = {};
-      slug.page = 'https://www.notion.so/';
-      slug.page += response.results[item].id.split('-').join('');
+      slug.page = response.results[item].id.split('-').join('');
       slug.slug = dbName + "/";
       slug.perma_link = slug.slug;
       if (response.results[item].properties.Name.title.length > 0) {
@@ -35,7 +34,7 @@ const notion = new Client({ auth: NOTION_API });
       }
     }
   }
-n  if (json.page_slug.length === 0) {
+  if (json.page_slug.length === 0) {
     console.error('[ERROR] table content empyt, file not written.');
     proxecc.exit(2);
   }

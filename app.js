@@ -43,7 +43,7 @@ function parse_slug() {
     Object.keys(jslugs['page_slug']).forEach(i => {
       let page = jslugs['page_slug'][i];
       const slug = page['slug'];
-      const uid = page['page'].split('-').pop();
+      const uid = page['page'];
       const perma_link = page['perma_link'];
       PAGE_TO_SLUG[uid] = slug;
       aux[slug] = uid;
