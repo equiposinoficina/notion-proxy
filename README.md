@@ -135,7 +135,13 @@ server {
 ```
 # slugs and perma links for your pages
 
-There is a script in 'scripts/' that has to be configured at 'scripts/config/default.json'. File syntaxis is:
+Slugs and perma_links are automaticaly created by a different script (get_slugs.js) which is going to be executed on demand or scheduled by cron. Script execution will create a cache file in JSON format with Notion table content which has the list of pages to publish.
+
+Table of pages only requires two fields, one of them is the page title which is mandatory in Notion. This title is going to be sluglified for creating the slug URL. Another required property is the unique page number, the property name has to be "#" (dash symbol, without the quotes).
+
+Remember that in Notion tables are also called datbases. Because of that in this documentation we use both words as synonims.
+
+"get_slugs.js" is in 'scripts/' and has to be configured at 'scripts/config/default.json'. File syntaxis is:
 
 ```
 {
@@ -147,6 +153,14 @@ There is a script in 'scripts/' that has to be configured at 'scripts/config/def
 }
 ```
 
+After configuring which databases has to be processed, it's time to schedule the process for downloading database content and save the slugs cache.
+
+We are going to use crontab for scheduling 'get_slug.js' execution.
+
+```
+# change PATH_TO_THE_CODE for your path where "get_slugs.js" is located
+0 0 * * *  /usr/bin/bash -c "cd /PATH_TO_THE_CODE/scripts && node get_slugs.js"
+```
 
 
 
