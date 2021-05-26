@@ -133,6 +133,22 @@ server {
   }
 }
 ```
+# slugs and perma links for your pages
+
+There is a script in 'scripts/' that has to be configured at 'scripts/config/default.json'. File syntaxis is:
+
+```
+{
+  "NOTION_API": "",
+  "DATABASE_IDS": {
+    "DATABASE_NAME":"DATABASE_ID",
+  },
+  "SLUGS_JSON": "../cache/slugs.json"
+}
+```
+
+
+
 
 # License
 [GNU General Public License v3.0](https://github.com/equiposinoficina/notion-proxy/blob/main/LICENSE)
