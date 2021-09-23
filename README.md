@@ -1,3 +1,7 @@
+# ⚠⚠⚠ **OBSOLETE PROJECT** ⚠⚠⚠ 
+### ‼there is a new project called [notion-proxy-ng](https://github.com/equiposinoficina/notion-proxy-ng) whcih overcomes this one ‼
+<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p>
+
 # notion-proxy
 Turn your Notion pages into a Website with your URLs and customizations
 
